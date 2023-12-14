@@ -5,7 +5,7 @@
 </script>
 
 <header class="container">
-  <button on:click={() => invoke("open_docs")}>Test</button>
+  <button on:click={() => invoke("jagex_login")}>Test</button>
   <HeadingGroup
     title="Microbot Launcher"
     subtitle="A Jagex Account compatible launcher for Microbot"

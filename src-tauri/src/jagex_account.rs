@@ -4,14 +4,14 @@ use form_urlencoded;
 use std::str;
 use std::{collections::HashMap, format};
 
-struct Account {
-    login_url: String,
+pub struct Account {
+    pub login_url: String,
     user_agent: String,
     login_data: HashMap<LoginDataKey, String>,
 }
 
 impl Account {
-    fn new() -> Self {
+    pub fn new() -> Self {
         Self {
             login_url: "".to_string(),
             user_agent: get_chrome_rua(),
@@ -19,7 +19,7 @@ impl Account {
         }
     }
 
-    async fn generate_login_url(&mut self) {
+    pub async fn generate_login_url(&mut self) {
         let (verifier, challenge) = Self::generate_pkce_pair();
 
         let url = format!("{}/oauth2/auth?", Config::OriginUrl.value());
@@ -107,11 +107,4 @@ impl Config {
             Self::BasicAuthHeader => basic_auth_header,
         }
     }
-}
-
-#[cfg(test)]
-mod tests {
-    use base64::{engine::general_purpose, Engine as _};
-    #[test]
-    fn it_works() {}
 }

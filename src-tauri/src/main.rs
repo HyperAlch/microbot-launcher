@@ -1,6 +1,10 @@
 // Prevents additional console window on Windows in release, DO NOT REMOVE!!
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
 
+use std::println;
+
+use jagex_account::Account;
+
 mod jagex_account;
 
 // Learn more about Tauri commands at https://tauri.app/v1/guides/features/command
@@ -20,9 +24,18 @@ async fn open_docs(handle: tauri::AppHandle) {
     .unwrap();
 }
 
+#[tauri::command]
+async fn jagex_login(_handle: tauri::AppHandle) {
+    let mut account = Account::new();
+
+    account.generate_login_url().await;
+
+    println!("{}", account.login_url);
+}
+
 fn main() {
     tauri::Builder::default()
-        .invoke_handler(tauri::generate_handler![greet, open_docs])
+        .invoke_handler(tauri::generate_handler![greet, open_docs, jagex_login])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
 }
