@@ -3,58 +3,83 @@ use form_urlencoded;
 use std::str;
 use std::{collections::HashMap, format};
 
-use crate::user_agent::generate_user_agent;
+pub async fn generate_login_url() -> String {
+    let (verifier, challenge) = generate_pkce_pair();
 
-pub struct Account {
-    pub login_url: String,
-    pub user_agent: String,
-    login_data: HashMap<LoginDataKey, String>,
+    let url = format!("{}/oauth2/auth?", Config::OriginUrl.value());
+
+    let query_string: String = form_urlencoded::Serializer::new(String::new())
+        .append_pair("auth_method", "")
+        .append_pair("login_type", "")
+        .append_pair("flow", "launcher")
+        .append_pair("response_type", "code")
+        .append_pair("client_id", &Config::ClientId.value())
+        .append_pair("redirect_uri", &Config::RedirectUrl.value())
+        .append_pair("code_challenge", &challenge)
+        .append_pair("code_challenge_method", "S256")
+        .append_pair("prompt", "login")
+        .append_pair(
+            "scope",
+            "openid offline gamesso.token.create user.profile.read",
+        )
+        .append_pair(
+            "state",
+            str::from_utf8(&verifier).expect("Error in: generate_login_url() - verifier invalid"),
+        )
+        .finish();
+
+    format!("{}{}", url, query_string)
 }
 
-impl Account {
-    pub fn new() -> Self {
-        Self {
-            login_url: "".to_string(),
-            user_agent: generate_user_agent(),
-            login_data: HashMap::new(),
-        }
-    }
+fn generate_pkce_pair() -> (Vec<u8>, String) {
+    let code_verify = pkce::code_verifier(43);
+    let code_challenge = pkce::code_challenge(&code_verify);
 
-    pub async fn generate_login_url(&mut self) {
-        let (verifier, challenge) = Self::generate_pkce_pair();
+    (code_verify, code_challenge)
+}
 
-        let url = format!("{}/oauth2/auth?", Config::OriginUrl.value());
+pub async fn get_login_data(params: String) {
+    let param_dict = get_login_precursors(params);
 
-        let query_string: String = form_urlencoded::Serializer::new(String::new())
-            .append_pair("auth_method", "")
-            .append_pair("login_type", "")
-            .append_pair("flow", "launcher")
-            .append_pair("response_type", "code")
-            .append_pair("client_id", &Config::ClientId.value())
-            .append_pair("redirect_uri", &Config::RedirectUrl.value())
-            .append_pair("code_challenge", &challenge)
-            .append_pair("code_challenge_method", "S256")
-            .append_pair("prompt", "login")
-            .append_pair(
-                "scope",
-                "openid offline gamesso.token.create user.profile.read",
+    let code = param_dict.get("code").expect("Failed to parse code");
+    let state = param_dict.get("state").expect("Failed to parse state");
+
+    println!("Code: {:?}", code);
+    println!("State: {:?}", state);
+}
+
+fn get_login_precursors(mut params: String) -> HashMap<String, String> {
+    params = params.replace("jagex:", "");
+    let params: Vec<(String, String)> = params
+        .split(",")
+        .map(|x| x.to_string())
+        .map(|x| {
+            let split: Vec<&str> = x.split("=").collect();
+            (
+                split
+                    .get(0)
+                    .expect(&format!("Failed parsing code, state, or intent: {}", x))
+                    .to_string(),
+                split
+                    .get(1)
+                    .expect(&format!("Failed parsing code, state, or intent: {}", x))
+                    .to_string(),
             )
-            .append_pair(
-                "state",
-                str::from_utf8(&verifier)
-                    .expect("Error in: generate_login_url() - verifier invalid"),
-            )
-            .finish();
+        })
+        .collect();
 
-        self.login_url = format!("{}{}", url, query_string)
+    let mut param_dict: HashMap<String, String> = Default::default();
+    for param in params {
+        param_dict.insert(param.0, param.1);
     }
 
-    fn generate_pkce_pair() -> (Vec<u8>, String) {
-        let code_verify = pkce::code_verifier(43);
-        let code_challenge = pkce::code_challenge(&code_verify);
+    param_dict
+}
 
-        (code_verify, code_challenge)
-    }
+#[derive(Clone, serde::Serialize, serde::Deserialize)]
+pub struct AddingAccountPayload {
+    pub url: String,
+    pub user_agent: String,
 }
 
 enum LoginDataKey {

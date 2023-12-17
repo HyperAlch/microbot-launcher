@@ -534,6 +534,19 @@ dependencies = [
 ]
 
 [[package]]
+name = "dashmap"
+version = "5.5.3"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "978747c1d849a7d2ee5e8adc0159961c48fb7e5db2f06af6723b80123bb53856"
+dependencies = [
+ "cfg-if",
+ "hashbrown 0.14.3",
+ "lock_api",
+ "once_cell",
+ "parking_lot_core",
+]
+
+[[package]]
 name = "deranged"
 version = "0.3.10"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1564,8 +1577,10 @@ name = "microbot-launcher"
 version = "0.0.0"
 dependencies = [
  "base64 0.21.5",
+ "dashmap",
  "form_urlencoded",
  "pkce",
+ "rand 0.8.5",
  "serde",
  "serde_json",
  "tauri",

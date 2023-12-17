@@ -2,6 +2,20 @@
   import { invoke } from "@tauri-apps/api/tauri";
   import HeadingGroup from "./components/basic/HeadingGroup.svelte";
   import Nav from "./components/basic/Nav.svelte";
+  import { listen, emit } from "@tauri-apps/api/event";
+
+  async function awaitTest() {
+    const unlisten = await listen("adding_account", (event) => {
+      invoke("get_jagex_login_data", {
+        payload: {
+          url: event.payload.url,
+          user_agent: event.payload.user_agent,
+        },
+      });
+    });
+  }
+
+  awaitTest().then();
 </script>
 
 <header class="container">
