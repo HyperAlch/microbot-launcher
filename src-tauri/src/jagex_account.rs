@@ -3,6 +3,8 @@ use form_urlencoded;
 use std::str;
 use std::{collections::HashMap, format};
 
+use crate::user_agent::generate_user_agent;
+
 pub struct Account {
     pub login_url: String,
     pub user_agent: String,
@@ -13,7 +15,7 @@ impl Account {
     pub fn new() -> Self {
         Self {
             login_url: "".to_string(),
-            user_agent: get_chrome_rua(),
+            user_agent: generate_user_agent(),
             login_data: HashMap::new(),
         }
     }
