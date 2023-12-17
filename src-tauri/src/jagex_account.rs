@@ -1,12 +1,11 @@
 use base64::{engine::general_purpose, Engine as _};
-use fake_user_agent::get_chrome_rua;
 use form_urlencoded;
 use std::str;
 use std::{collections::HashMap, format};
 
 pub struct Account {
     pub login_url: String,
-    user_agent: String,
+    pub user_agent: String,
     login_data: HashMap<LoginDataKey, String>,
 }
 
@@ -65,7 +64,7 @@ enum LoginDataKey {
     TokenType,
 }
 
-enum Config {
+pub enum Config {
     Provider,
     OriginUrl,
     Origin2fa,
@@ -83,7 +82,7 @@ enum Config {
 }
 
 impl Config {
-    fn value(&self) -> String {
+    pub fn value(&self) -> String {
         let mut basic_auth_header = String::new();
         general_purpose::STANDARD
             .encode_string("com_jagex_auth_desktop_osrs:public", &mut basic_auth_header);
