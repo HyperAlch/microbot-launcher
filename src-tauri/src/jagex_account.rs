@@ -1,7 +1,9 @@
 use base64::{engine::general_purpose, Engine as _};
 use form_urlencoded;
-use std::str;
+use reqwest::header::{self, ACCEPT, CONTENT_TYPE};
+use serde::Deserialize;
 use std::{collections::HashMap, format};
+use std::{println, str};
 
 pub async fn generate_login_url() -> String {
     let (verifier, challenge) = generate_pkce_pair();
@@ -38,7 +40,7 @@ fn generate_pkce_pair() -> (Vec<u8>, String) {
     (code_verify, code_challenge)
 }
 
-pub async fn get_login_data(params: String) {
+pub async fn get_login_data(params: String, user_agent: String) {
     let param_dict = get_login_precursors(params);
 
     let code = param_dict.get("code").expect("Failed to parse code");
@@ -46,6 +48,51 @@ pub async fn get_login_data(params: String) {
 
     println!("Code: {:?}", code);
     println!("State: {:?}", state);
+    println!("User Agent: {:?}", user_agent);
+
+    let mut headers = header::HeaderMap::new();
+
+    // Client headers
+    headers.insert(
+        CONTENT_TYPE,
+        "application/x-www-form-urlencoded"
+            .parse()
+            .expect("Invalid `Content-Type` header"),
+    );
+    headers.insert(
+        ACCEPT,
+        "application/json".parse().expect("Invalid `Accept` header"),
+    );
+
+    let client_id = Config::ClientId.value();
+    let redirect_uri = Config::RedirectUrl.value();
+
+    let mut params = HashMap::new();
+    params.insert("grant_type", "authorization_code");
+    params.insert("client_id", &client_id);
+    params.insert("code", code);
+    params.insert("code_verifier", &state);
+    params.insert("redirect_uri", &redirect_uri);
+
+    // Client builder
+    let client = reqwest::Client::builder()
+        .default_headers(headers)
+        .user_agent(user_agent)
+        .build()
+        .expect("Failed to build `reqwest` http client");
+
+    let response = client
+        .post(Config::ExchangeUrl.value())
+        .form(&params)
+        .send()
+        .await
+        .expect(&format!(
+            "Failed POST request: {}",
+            Config::ExchangeUrl.value()
+        ));
+
+    let login_data = response.json::<LoginData>().await.unwrap();
+    println!("\n\n[Login Data]\n{:?}", login_data);
 }
 
 fn get_login_precursors(mut params: String) -> HashMap<String, String> {
@@ -82,13 +129,14 @@ pub struct AddingAccountPayload {
     pub user_agent: String,
 }
 
-enum LoginDataKey {
-    AccessToken,
-    ExpiresIn,
-    IdToken,
-    RefreshToken,
-    Scope,
-    TokenType,
+#[derive(Deserialize, Debug)]
+struct LoginData {
+    access_token: String,
+    expires_in: u16,
+    id_token: String,
+    refresh_token: String,
+    scope: String,
+    token_type: String,
 }
 
 pub enum Config {

@@ -1,8 +1,9 @@
 // Prevents additional console window on Windows in release, DO NOT REMOVE!!
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
 
-use jagex_account::generate_login_url;
 use std::println;
+
+use jagex_account::generate_login_url;
 
 use tauri::Manager;
 
@@ -14,6 +15,8 @@ mod user_agent;
 async fn jagex_login(handle: tauri::AppHandle, app_window: tauri::Window) {
     let login_url = generate_login_url().await;
     let user_agent = user_agent::generate_user_agent();
+
+    println!("Agent: {}", &user_agent);
 
     let _popup_window = tauri::WindowBuilder::new(
         &handle,
@@ -45,7 +48,7 @@ async fn jagex_login(handle: tauri::AppHandle, app_window: tauri::Window) {
 
 #[tauri::command]
 async fn get_jagex_login_data(payload: AddingAccountPayload) {
-    get_login_data(payload.url).await;
+    get_login_data(payload.url, payload.user_agent).await;
 }
 
 fn main() {
